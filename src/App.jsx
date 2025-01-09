@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 function App() {
-  // Time slots for rows
   const timeSlots = [
     "7:00 AM",
     "8:00 AM",
@@ -19,23 +18,68 @@ function App() {
     "8:00 PM",
     "9:00 PM",
     "10:00 PM",
+    "11:00 PM",
+    "12:00 AM",
   ];
 
-  // Operatory headers
-  const operatories = ["OP 1", "OP 2", "OP 3", "OP 4", "OP 5"];
+  const operatoryData = {
+    "2025-01-09": ["OP 1", "OP 2", "OP 3"],
+    "2025-01-10": ["OP 4", "OP 5", "OP 6"],
+  };
 
-  // Dynamic Highlighting State
-  const [highlightConfig, setHighlightConfig] = useState({
-    startTime: "10:00 AM", // Highlight start time
-    endTime: "3:00 PM",   // Highlight end time
-    operatory: "OP 5",    // Operatory to highlight
-  });
+  const highlightConfigData = {
+    "2025-01-09": [
+      {
+        startTime: "9:00 AM",
+        endTime: "1:00 PM",
+        operatory: "OP 2",
+      },
+    ],
+    "2025-01-10": [
+      {
+        startTime: "11:00 AM",
+        endTime: "3:00 PM",
+        operatory: "OP 5",
+      },
+      {
+        startTime: "5:00 PM",
+        endTime: "8:00 PM",
+        operatory: "OP 5",
+      },
+      {
+        startTime: "10:00 PM",
+        endTime: "11:00 PM",
+        operatory: "OP 5",
+      },
+      {
+        startTime: "9:00 AM",
+        endTime: "1:00 PM",
+        operatory: "OP 4",
+      },
+    ],
+  };
+
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
+  const operatories = operatoryData[selectedDate] || [];
+
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+  };
 
   return (
     <div className="p-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-lg font-bold">Dynamic Schedule Highlighting</div>
+      <div className="flex justify-between items-center mb-4 top-0 sticky bg-white">
+        <div className="text-lg font-bold">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={handleDateChange}
+            className="border border-gray-300 p-2 rounded"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <span className="font-medium">Practice ID:</span>
           <span className="bg-gray-100 px-4 py-2 rounded-lg text-sm">
@@ -44,19 +88,17 @@ function App() {
         </div>
       </div>
 
-      {/* table */}
       <div className="overflow-x-auto">
         <table className="table-auto border-collapse border border-gray-300 w-full text-sm">
-          {/* table Head */}
           <thead>
-            <tr className="">
+            <tr>
               <th className="border border-gray-300 px-4 py-2 bg-gray-100 text-left">
                 Time
               </th>
               {operatories.map((op, index) => (
                 <th
                   key={index}
-                  className="border border-gray-300 px-4 py-2 bg-gray-100 text-center "
+                  className="border border-gray-300 px-4 py-2 bg-gray-100 text-center"
                 >
                   {op}
                 </th>
@@ -64,45 +106,33 @@ function App() {
             </tr>
           </thead>
 
-          {/* table Body */}
           <tbody>
-            {timeSlots.map((time, rowIndex) => {
-            
-              const isWithinTimeRange =
-                timeSlots.indexOf(highlightConfig.startTime) <= rowIndex &&
-                rowIndex <= timeSlots.indexOf(highlightConfig.endTime)
+            {timeSlots.map((time, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="border border-gray-300 px-4 py-2 text-gray-600">
+                  {time}
+                </td>
+                {operatories.map((op, colIndex) => {
+                  const isHighlighted = (highlightConfigData[selectedDate] || []).some(
+                    (config) =>
+                      timeSlots.indexOf(config.startTime) <= rowIndex &&
+                      rowIndex <= timeSlots.indexOf(config.endTime) &&
+                      op === config.operatory
+                  );
 
-              return (
-                <tr key={rowIndex}>
-                  {/* Time Column */}
-                  <td className="border border-gray-300 px-4 py-2 text-gray-600">
-                    {time}
-                  </td>
-
-                  {/* Operatory Columns */}
-                  {operatories.map((op, colIndex) => {
-                    // Check if the current column is the target operatory
-                    const isTargetOperatory =
-                      op === highlightConfig.operatory;
-
-                    // Highlight only cells that match both conditions
-                    const isHighlighted =
-                      isWithinTimeRange && isTargetOperatory;
-
-                    return (
-                      <td
-                        key={colIndex}
-                        data-time={time} // Add data attribute for time
-                        data-operatory={op} // Add data attribute for operatory
-                        className={`border border-gray-300 px-4 py-2 ${
-                          isHighlighted ? "bg-yellow-200" : ""
-                        }`}
-                      ></td>
-                    )
-                  })}
-                </tr>
-              );
-            })}
+                  return (
+                    <td
+                      key={colIndex}
+                      data-time={time}
+                      data-operatory={op}
+                      className={`border border-gray-300 px-4 py-2 ${
+                        isHighlighted ? "bg-yellow-200" : ""
+                      }`}
+                    ></td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
