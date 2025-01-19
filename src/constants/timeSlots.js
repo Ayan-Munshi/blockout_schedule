@@ -23,5 +23,6 @@ export const timeSlots = [
     "9:00 PM",
     "10:00 PM",
     "11:00 PM",
+    "12:00 PM"
   ];
   

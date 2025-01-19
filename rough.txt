@@ -1,0 +1,550 @@
+import React, { useState, useEffect } from "react";
+import Table from "../../components/table";
+import { useGetScheduleListQuery } from "../../redux/apiSlice";
+
+
+const GridCalender = () => {
+    const [highlightConfigData, setHighlightConfigData] = useState({});
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
+  const {data,isLoading,error} = useGetScheduleListQuery()
+  console.log(data,isLoading,error,"xxx");
+  
+  // Sample API response
+  const apiResponse = {
+    result: [
+      {
+        id: "d022b893-3523-455a-91aa-2176db7fa67e",
+        practice_id: "1700230c-394b-4a8a-8aa5-55c03f849ef7",
+        schedule_num: 112408,
+        schedule_date: "2025-01-15",
+        start_time: "01:00:00",
+        stop_time: "13:00:00",
+        schedule_type: "Blockout",
+        prov_num: 0,
+        blockout_type_id: 241,
+        blockout_type: "NOTES",
+        note: "Salud FLM LAB\nMarisela  & Salud will assist Dr. Mariscal",
+        operatories: "4",
+        employee_num: 0,
+        last_sync_at: "2025-01-01T08:00:14.975Z",
+      },
+      {
+        id: "d29ddc71-5362-4feb-a14a-375822a9c3bd",
+        practice_id: "1700230c-394b-4a8a-8aa5-55c03f849ef7",
+        schedule_num: 123800,
+        schedule_date: "2025-01-15",
+        start_time: "15:00:00",
+        stop_time: "20:00:00",
+        schedule_type: "Blockout",
+        prov_num: 0,
+        blockout_type_id: 241,
+        blockout_type: "NOTES",
+        note: "Gloria will assist Dr. Boege",
+        operatories: "1",
+        employee_num: 0,
+        last_sync_at: "2025-01-01T08:00:14.978Z",
+      },
+    ],
+  };
+
+  // Function to format time to 12-hour clock with AM/PM
+  const formatTo12Hour = (time) => {
+    const [hour, minute] = time.split(":").map(Number); // Split "06:00" into [6, 0]
+    const ampm = hour >= 12 ? "PM" : "AM"; // Determine AM/PM
+    const formattedHour = hour % 12 || 12; // Convert to 12-hour format (e.g., 0 -> 12)
+    return `${formattedHour}:${minute.toString().padStart(2, "0")} ${ampm}`; // Format time
+  };
+
+  // Transform API response into highlightConfigData
+  useEffect(() => {
+    const transformToHighlightConfig = (response) => {
+      const data = response.result;
+
+      return data.reduce((acc, item) => {
+        const date = item.schedule_date;
+        const startTime = formatTo12Hour(item.start_time.slice(0, 5)); // Format start time
+        const endTime = formatTo12Hour(item.stop_time.slice(0, 5));   // Format end time
+        const operatory = `OP ${item.operatories}`;
+
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+
+        acc[date].push({ startTime, endTime, operatory });
+        return acc;
+      }, {});
+    };
+
+    setHighlightConfigData(transformToHighlightConfig(apiResponse));
+  }, []);
+
+  const operatories = highlightConfigData[selectedDate]?.map((config) => config.operatory) || [];
+
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+  };
+  return (
+    <>
+    <div className="flex justify-between items-center mb-4 top-0 z-2 sticky bg-gray-300">
+        <div className="text-lg font-bold">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={handleDateChange}
+            className="border border-gray-300 p-2 rounded"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-white">
+          <span className="font-medium">Practice ID:</span>
+          <span className="bg-gray-100 px-4 py-2 rounded-lg text-sm">
+            Xk4dm5x34k3SA
+          </span>
+        </div>
+      </div>
+
+      <Table
+        operatories={operatories} // Deduplicate operatories
+        highlightConfigData={highlightConfigData}
+        selectedDate={selectedDate}
+      />
+      </>
+  )
+}
+
+export default GridCalender
+
+
+
+
+import React, { useState, useEffect } from "react";
+import { useGetScheduleListQuery } from "../../redux/apiSlice";
+import {operatoryList} from "../../constants/operatoryList"
+
+// Mock API data
+// const apiResponse = {
+//   result: [
+//     {
+//       id: "d022b893-3523-455a-91aa-2176db7fa67e",
+//       practice_id: "1700230c-394b-4a8a-8aa5-55c03f849ef7",
+//       schedule_num: 112408,
+//       schedule_date: "2025-01-15",
+//       start_time: "13:00:00",
+//       stop_time: "15:00:00",
+//       schedule_type: "Blockout",
+//       prov_num: 0,
+//       blockout_type_id: 241,
+//       blockout_type: "NOTES",
+//       note: "Sample note",
+//       operatories: "4,6",
+//       employee_num: 0,
+//       last_sync_at: "2025-01-01T08:00:14.975Z",
+//     },
+//     {
+//       id: "d29ddc71-5362-4feb-a14a-375822a9c3bd",
+//       practice_id: "1700230c-394b-4a8a-8aa5-55c03f849ef7",
+//       schedule_num: 123800,
+//       schedule_date: "2025-01-15",
+//       start_time: "09:00:00",
+//       stop_time: "12:00:00",
+//       schedule_type: "Blockout",
+//       prov_num: 0,
+//       blockout_type_id: 241,
+//       blockout_type: "NOTES",
+//       note: "Another note",
+//       operatories: "1",
+//       employee_num: 0,
+//       last_sync_at: "2025-01-01T08:00:14.978Z",
+//     },
+//   ],
+// };
+
+// const operatoryList = [
+//   {
+//     id: "8e963369-becc-46a7-b050-744143396155",
+//     pms_op_num: 4,
+//     name: "OP 4",
+//   },
+//   {
+//     id: "43f82041-b24a-49c5-8e28-a48489ae590f",
+//     pms_op_num: 6,
+//     name: "OP 6",
+//   },
+//   {
+//     id: "5e249b9a-fa28-4564-9108-9b6dc2230dda",
+//     pms_op_num: 1,
+//     name: "OP 1",
+//   },
+//   {
+//     id: "5e249b9a-fa28-4564-9108-9b6dc2230dda",
+//     pms_op_num: 10,
+//     name: "OP 9",
+//   },
+// ];
+
+
+
+const Index = () => {
+  const [newList, setNewList] = useState([]);
+  const {data} = useGetScheduleListQuery()
+
+  useEffect(() => {
+    // Helper function to format time in HH:MM AM/PM
+    const formatTime = (time) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      const isPM = hours >= 12;
+      const formattedHours = isPM ? (hours > 12 ? hours - 12 : hours) : hours;
+      const formattedMinutes = minutes.toString().padStart(2, "0");
+      return `${formattedHours}:${formattedMinutes} ${isPM ? "PM" : "AM"}`;
+    };
+
+    // Transform the data
+    const transformedList = data.result.flatMap((entry) => {
+      const operatoryNums = entry.operatories.split(",").map(Number);
+
+      return operatoryNums.map((num) => {
+        const operatory = operatoryList.find((op) => op.pms_op_num === num);
+        return {
+          operatory: operatory ? operatory.name : `Unknown OP ${num}`,
+          startTime: formatTime(entry.start_time),
+          endTime: formatTime(entry.stop_time),
+        };
+      });
+    });
+
+    setNewList(transformedList);
+  }, []);
+
+  return (
+    <div>
+      <h1>New List</h1>
+      <ul>
+        {newList.map((item, index) => (
+          <li key={index}>
+            {item.operatory} - {item.startTime} to {item.endTime}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default Index;
+
+
+
+import React, { useEffect, useState } from "react";
+
+// Sample API response for operatories (operatoryList)
+const operatoryList = {
+  success: 1,
+  status_code: 200,
+  message: "Operatory list has been fetched successfully!",
+  result: [
+    { id: "8e963369-becc-46a7-b050-744143396155", pms_op_num: 15, name: "OP 9", is_hidden: false },
+    { id: "ae9eb2d2-f9db-4905-8735-76a93bb817dc", pms_op_num: 17, name: "OP 6", is_hidden: false },
+    { id: "38122b41-1aaa-414c-8963-b847836e19b9", pms_op_num: 18, name: "OP 2", is_hidden: false },
+    { id: "252bf683-7b54-43a5-96b9-a88ccd67c9f3", pms_op_num: 19, name: "OP 7", is_hidden: false },
+    { id: "87d167ba-7b85-4a13-8e63-c98e4abcb086", pms_op_num: 20, name: "OP 8", is_hidden: false },
+    { id: "5e249b9a-fa28-4564-9108-9b6dc2230dda", pms_op_num: 1, name: "OP 5", is_hidden: false },
+    { id: "acd44aa5-25b5-431d-970c-f3b735950183", pms_op_num: 3, name: "OP 10", is_hidden: false },
+    { id: "78334434-4562-4c7e-a583-40bb10bf3c07", pms_op_num: 4, name: "OP 3", is_hidden: false },
+    { id: "43f82041-b24a-49c5-8e28-a48489ae590f", pms_op_num: 5, name: "OP 1", is_hidden: false },
+    { id: "5ff26817-fccc-460d-95a5-d38d40accfe7", pms_op_num: 6, name: "OP 4", is_hidden: false },
+    { id: "0e9f9881-d201-4dc9-b9c8-fe34f4bc8d13", pms_op_num: 7, name: "Notes", is_hidden: false },
+    { id: "b5604a49-dd32-452c-a2b5-7d6205fb6814", pms_op_num: 9, name: "Broken/Cancelled", is_hidden: false },
+    { id: "aa2924b9-f4db-4789-9315-2f6dc57774b0", pms_op_num: 12, name: "OP 11", is_hidden: false },
+    { id: "f6451b04-3593-4322-9da8-32b3ecc7f0d6", pms_op_num: 13, name: "OP 12", is_hidden: false },
+  ],
+};
+
+// Sample API response for scheduled slots
+const scheduledSlots = [
+  {
+    schedule_type: "Blockout",
+    operatory: "5",
+    start_time: "11:00:00",
+    stop_time: "15:00:00",
+  },
+  {
+    schedule_type: "Provider",
+    operatory: "5",
+    start_time: "17:00:00",
+    stop_time: "20:00:00",
+  },
+  {
+    schedule_type: "Provider",
+    operatory: "5",
+    start_time: "22:00:00",
+    stop_time: "23:00:00",
+  },
+  {
+    schedule_type: "Provider",
+    operatory: "4",
+    start_time: "9:00:00",
+    stop_time: "13:00:00",
+  },
+  {
+    schedule_type: "Provider",
+    operatory: "9,3",
+    start_time: "9:00:00",
+    stop_time: "13:00:00",
+  },
+];
+
+// Function to convert "HH:MM:SS" to "h:mm AM/PM"
+const formatTime = (time) => {
+  const [hour, minute] = time.split(":").map(Number);
+  const isPM = hour >= 12;
+  const formattedHour = hour % 12 || 12; // Convert 0 to 12 for midnight
+  const ampm = isPM ? "PM" : "AM";
+  return `${formattedHour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+};
+
+const HighlightConfig = () => {
+  const [highlightConfigData, setHighlightConfigData] = useState([]);
+
+  useEffect(() => {
+    const configData = scheduledSlots.flatMap((slot) => {
+      if (slot.schedule_type && slot.schedule_type.trim() === "Provider") {
+        // Split operatories into an array
+        return slot.operatory.split(",").flatMap((op) => {
+          const matchingOperatory = operatoryList.result.find(
+            (operatory) => operatory.pms_op_num.toString() === op.trim() && !operatory.is_hidden
+          );
+
+          if (matchingOperatory) {
+            return {
+              startTime: formatTime(slot.start_time),
+              endTime: formatTime(slot.stop_time),
+              operatory: matchingOperatory.name,
+            };
+          }
+          return null;
+        });
+      }
+      return null;
+    });
+
+    // Filter out null values
+    setHighlightConfigData(configData.filter((item) => item !== null));
+  }, []);
+
+  console.log(highlightConfigData, "xxx");
+
+  return (
+    <div>
+      <h3>Highlight Config Data</h3>
+      <pre>{JSON.stringify(highlightConfigData, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default HighlightConfig;
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from "react";
+
+// Sample API response for operatories (operatoryList)
+const operatoryList = {
+  success: 1,
+  status_code: 200,
+  message: "Operatory list has been fetched successfully!",
+  result: [
+    { id: "8e963369-becc-46a7-b050-744143396155", pms_op_num: 15, name: "OP 9","is_hidden": false, },
+    { id: "ae9eb2d2-f9db-4905-8735-76a93bb817dc", pms_op_num: 17, name: "OP 6","is_hidden": false, },
+    { id: "38122b41-1aaa-414c-8963-b847836e19b9", pms_op_num: 18, name: "OP 2","is_hidden": false, },
+    { id: "252bf683-7b54-43a5-96b9-a88ccd67c9f3", pms_op_num: 19, name: "OP 7","is_hidden": false, },
+    { id: "87d167ba-7b85-4a13-8e63-c98e4abcb086", pms_op_num: 20, name: "OP 8","is_hidden": false, },
+    { id: "5e249b9a-fa28-4564-9108-9b6dc2230dda", pms_op_num: 1, name: "OP 5","is_hidden": false, },
+    { id: "acd44aa5-25b5-431d-970c-f3b735950183", pms_op_num: 3, name: "OP 10","is_hidden": false, },
+    { id: "78334434-4562-4c7e-a583-40bb10bf3c07", pms_op_num: 4, name: "OP 3","is_hidden": false, },
+    { id: "43f82041-b24a-49c5-8e28-a48489ae590f", pms_op_num: 5, name: "OP 1","is_hidden": false, },
+    { id: "5ff26817-fccc-460d-95a5-d38d40accfe7", pms_op_num: 6, name: "OP 4","is_hidden": false, },
+    { id: "0e9f9881-d201-4dc9-b9c8-fe34f4bc8d13", pms_op_num: 7, name: "Notes","is_hidden": false, },
+    { id: "b5604a49-dd32-452c-a2b5-7d6205fb6814", pms_op_num: 9, name: "Broken/Cancelled","is_hidden": false, },
+    { id: "aa2924b9-f4db-4789-9315-2f6dc57774b0", pms_op_num: 12, name: "OP 11","is_hidden": false, },
+    { id: "f6451b04-3593-4322-9da8-32b3ecc7f0d6", pms_op_num: 13, name: "OP 12","is_hidden": false, },
+  ],
+};
+
+// Sample API response for scheduled slots
+const scheduledSlots = [
+  {
+    "schedule_type": "Blockout",
+    operatory: "5",
+    start_time: "11:00:00",
+    stop_time: "15:00:00",
+  },
+  {
+   "schedule_type": "Provider",
+    operatory: "5",
+    start_time: "17:00:00",
+    stop_time: "20:00:00",
+  },
+  {
+    "schedule_type": "Provider",
+    operatory: "5",
+    start_time: "22:00:00",
+    stop_time: "23:00:00",
+  },
+  {
+   "schedule_type": "Provider",
+    operatory: "4",
+    start_time: "9:00:00",
+    stop_time: "13:00:00",
+  },
+  {
+    "schedule_type": "Provider",
+    operatory: "9,3",
+    start_time: "9:00:00",
+    stop_time: "13:00:00",
+  },
+];
+
+// Function to convert "HH:MM:SS" to "h:mm AM/PM"
+const formatTime = (time) => {
+  const [hour, minute] = time.split(":").map(Number);
+  const isPM = hour >= 12;
+  const formattedHour = hour % 12 || 12; // Convert 0 to 12 for midnight
+  const ampm = isPM ? "PM" : "AM";
+  return `${formattedHour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+};
+
+const HighlightConfig = () => {
+  const [highlightConfigData, setHighlightConfigData] = useState([]);
+
+  useEffect(() => {
+    const configData = scheduledSlots.map((slot) => {
+      if(slot.schedule_type && slot.schedule_type.trim() === "Provider"){
+        // Find the operatory name matching pms_op_num
+        const matchingOperatory = operatoryList.result.find(
+          (operatory) =>
+            slot.operatory.split(",").map((op) => op.trim()).includes(operatory.pms_op_num.toString()) &&
+            operatory.is_hidden === false
+        );
+      
+      if (matchingOperatory) {
+        return {
+          startTime: formatTime(slot.start_time),
+          endTime: formatTime(slot.stop_time),
+          operatory: matchingOperatory.name,
+        };
+      }
+      return null;
+      }
+    });
+
+    // Filter out null values (in case no match was found)
+    setHighlightConfigData(configData.filter((item) => item !== null));
+  }, []);
+
+  console.log(highlightConfigData,"xxx");
+  
+
+  return (
+    <div>
+      <h3>Highlight Config Data</h3>
+      <pre>{JSON.stringify(highlightConfigData, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default HighlightConfig;
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from "react";
+import { useGetScheduleListQuery } from "../../redux/apiSlice"; // Assuming this is from your redux slice
+import { operatoryList } from "../../constants/operatoryList"; // Assuming this is a list of operatories
+
+// Function to convert "HH:MM:SS" to "h:mm AM/PM"
+const formatTime = (time) => {
+  const [hour, minute] = time.split(":").map(Number);
+  const isPM = hour >= 12;
+  const formattedHour = hour % 12 || 12; // Convert 0 to 12 for midnight
+  const ampm = isPM ? "PM" : "AM";
+  return `${formattedHour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+};
+
+const HighlightConfig = () => {
+  const [highlightConfigData, setHighlightConfigData] = useState([]);
+  
+  // Fetching scheduled slots using your redux query
+  const { data: scheduledSlots, error, isLoading } = useGetScheduleListQuery();
+
+  useEffect(() => {
+    if (scheduledSlots && scheduledSlots.result) {
+      console.log("Scheduled Slots:", scheduledSlots);
+
+      // Process the scheduled slots data to extract required info
+      const configData = scheduledSlots.result.flatMap((slot) => {
+        if (slot.schedule_type === "Provider" && slot.operatories) {
+          const operatoriesArray = slot.operatories.split(",");
+          console.log("Operatories:", operatoriesArray);
+
+          return operatoriesArray.flatMap((op) => {
+            // Find matching operatory from the operatoryList based on PMS operatory number
+            const matchingOperatory = operatoryList.result.find(
+              (operatory) => operatory.pms_op_num.toString() === op.trim() && !operatory.is_hidden
+            );
+
+            if (matchingOperatory) {
+              return {
+                startTime: formatTime(slot.start_time),
+                endTime: formatTime(slot.stop_time),
+                operatory: matchingOperatory.name,
+              };
+            }
+            return null; // Return null if no matching operatory is found
+          });
+        }
+        return null; // Return null if the schedule type is not "Provider" or no operatories
+      });
+
+      // Filter out null values and set the state
+      const filteredData = configData.filter((item) => item !== null);
+      console.log("Config Data After Filtering:", filteredData);
+      setHighlightConfigData(filteredData);
+    }
+  }, [scheduledSlots]); // Depend on scheduledSlots to rerun the effect when data changes
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error fetching scheduled slots.</div>;
+  }
+
+  return (
+    <div>
+      <h3>Highlight Config Data</h3>
+      <pre>{JSON.stringify(highlightConfigData, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default HighlightConfig;
